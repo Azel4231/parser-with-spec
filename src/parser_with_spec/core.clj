@@ -1,24 +1,28 @@
 (ns parser-with-spec.core
-  (:require [clojure.spec :as s]
-            [clojure.spec.gen :as gen]))
+  (:require [clojure.spec :as s]))
 
 (s/def ::method (s/cat :visibility (s/? #{"public" "protected" "private"})
                        :return-type string?
                        :method-name string?
-                       :args ::arg-def))
+                       :arg-def ::arg-def))
 
 (s/def ::arg-def (s/cat :opening-paren #{"("}
                         :args ::args
                         :closing-paren #{")"}))
 
-(s/def ::args (s/alt :no-args nil?
-                     :arg-list (s/cat :arg ::arg :more (s/* (s/cat :comma #{","}
-                                                                   :arg ::arg)))))
-(s/def ::arg (s/cat :type string? :name string?))
+(s/def ::args (s/? (s/cat :arg ::arg
+                          :more (s/* (s/cat :comma #{","}
+                                            :arg ::arg)))))
 
-(def code "public void main ( String arg1 , Object arg2 )")
-(def split-code (clojure.string/split code #" "))
-(str split-code)
-(s/conform ::method split-code)
+(s/def ::arg (s/cat :type string?
+                    :name string?))
 
-(s/exercise ::method)
+(def code "public void doSomething ( String arg1 , Object arg2 )")
+(def code2 "void doSomething ( )")
+
+(defn parse [s]
+  (s/conform ::method (clojure.string/split s #" "))) ;; sneak in the lexing step
+
+(parse code)
+(parse code2)
+
